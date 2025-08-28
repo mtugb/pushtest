@@ -1,9 +1,5 @@
 <?php
-// .envファイルから環境変数を読み込むライブラリを使用する場合
 require __DIR__ . '/../vendor/autoload.php';
-// Dotenv::createImmutable(__DIR__ . '/../')->load(); // 例: Dotenvライブラリを使う場合
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
@@ -19,7 +15,6 @@ if (!isset($data['action'])) {
     exit();
 }
 
-// Subscription情報を保存するファイル
 $subscriptionFile = __DIR__ . '/subscriptions.json';
 
 if ($data['action'] === 'register') {
@@ -41,8 +36,8 @@ if ($data['action'] === 'register') {
     $auth = [
         'VAPID' => [
             'subject' => 'mailto:me@example.com',
-            'publicKey' => $_ENV['PUBLIC_KEY'],
-            'privateKey' => $_ENV['PRIVATE_KEY'],
+            'publicKey' => 'BBCwjVU78n7y1VAvWukBSxYey95PeNIPVRNfc5PoWlYwWbBaZyH09iXwLlCGKzvTq1isJHJg0-lwm1XKspA_tQ0', // app.htmlと同じ公開鍵
+            'privateKey' => 'DFP11uaxtObFO9BMNuVsMs4EYKYUVqBbes6LZ70xk_I', // オンラインツールで生成した秘密鍵をここに貼り付け
         ],
     ];
 
