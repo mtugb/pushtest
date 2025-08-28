@@ -1,11 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WEB PUSH TEST APP</title>
 </head>
+
 <body>
     <h1>push notification test!!</h1>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                const swReg = await navigator.serviceWorker.register('./sw.js');
+                const sub = await swReg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: 'BBCwjVU78n7y1VAvWukBSxYey95PeNIPVRNfc5PoWlYwWbBaZyH09iXwLlCGKzvTq1isJHJg0-lwm1XKspA_tQ0' // VAPIDの公開鍵をここに設定
+                });
+                console.log('Subscription object:', sub);
+
+                // Subscriptionオブジェクトをバックエンドに送信
+                const response = await fetch('/api/push.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sub)
+                });
+                console.log('Backend response:', await response.text());
+            });
+        }
+    </script>
 </body>
+
 </html>
