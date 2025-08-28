@@ -22,10 +22,15 @@ if (!isset($data['action'])) {
 $subscriptionFile = __DIR__ . '/subscriptions.json';
 
 if ($data['action'] === 'register') {
-    // 購読（Subscription）登録の処理
+    $newSubscription = $data['subscription'];
+    // 登録された通知送信対象の一覧を取得
     $subscriptions = file_exists($subscriptionFile) ? json_decode(file_get_contents($subscriptionFile), true) : [];
-    $subscriptions[] = $data['subscription'];
-    file_put_contents($subscriptionFile, json_encode($subscriptions));
+    // 同じ端末を対象とした古いものがあれば削除（一度登録解除して再度登録した場合、古いのは無効なもので新しいのは有効なので。端末はエンドポイントで識別)
+    $updatedSubscriptions = array_filter($subscriptions, function($sub) use ($newSubscription) {
+        return $sub['endpoint'] !== $newSubscription['endpoint'];
+    });
+    $updatedSubscriptions[] = $newSubscription;//新しいデータを登録
+    file_put_contents($subscriptionFile, json_encode($updatedSubscriptions));
     echo json_encode(['success' => true, 'message' => 'Subscription registered successfully.']);
 } elseif ($data['action'] === 'send') {
     $subscriptions = file_exists($subscriptionFile) ? json_decode(file_get_contents($subscriptionFile), true) : [];
