@@ -15,10 +15,18 @@
         if ('serviceWorker' in navigator) {
             document.getElementById('sub').addEventListener('click', async () => {
                 const swReg = await navigator.serviceWorker.register('./sw.js');
-                const sub = await swReg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: 'BBCwjVU78n7y1VAvWukBSxYey95PeNIPVRNfc5PoWlYwWbBaZyH09iXwLlCGKzvTq1isJHJg0-lwm1XKspA_tQ0'
-                });
+                let sub = await swReg.pushManager.getSubscription(); // 既存の購読情報を取得
+
+                if (!sub) {
+                    // 購読情報が存在しない場合、新しく作成
+                    sub = await swReg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: 'BBCwjVU78n7y1VAvWukBSxYey95PeNIPVRNfc5PoWlYwWbBaZyH09iXwLlCGKzvTq1isJHJg0-lwm1XKspA_tQ0'
+                    });
+                    alert('New subscription created:');
+                } else {
+                    alert('Existing subscription found:');
+                }
 
                 // Subscriptionオブジェクトとactionを一緒に送信
                 const response = await fetch('api/push.php', {
@@ -31,7 +39,7 @@
                         subscription: sub
                     })
                 });
-                alert('Backend response:', await response.text());
+                alert('Backend response:' + await response.text());
             });
         }
     </script>
