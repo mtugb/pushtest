@@ -1,43 +1,69 @@
 <?php
-require __DIR__ . '../vendor/autoload.php';
+// .envファイルから環境変数を読み込むライブラリを使用する場合
+require __DIR__ . '/../vendor/autoload.php';
+// Dotenv::createImmutable(__DIR__ . '/../')->load(); // 例: Dotenvライブラリを使う場合
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
-use Minishlink\WebPush\VAPID;
+
+header('Content-Type: application/json');
 
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-if (empty($data)) {
-    exit("Invalid subscription data");
+if (!isset($data['action'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing action parameter']);
+    exit();
 }
 
-$auth = [
-    'VAPID' => [
-        'subject' => 'mailto:me@example.com',
-        'publicKey' => $_ENV['PUBLIC_KEY'],
-        'privateKey' => $_ENV['PRIVATE_KEY'],
-    ],
-];
+// Subscription情報を保存するファイル
+$subscriptionFile = __DIR__ . '/subscriptions.json';
 
-$webPush = new WebPush($auth);
+if ($data['action'] === 'register') {
+    // 購読（Subscription）登録の処理
+    $subscriptions = file_exists($subscriptionFile) ? json_decode(file_get_contents($subscriptionFile), true) : [];
+    $subscriptions[] = $data['subscription'];
+    file_put_contents($subscriptionFile, json_encode($subscriptions));
+    echo json_encode(['success' => true, 'message' => 'Subscription registered successfully.']);
+} elseif ($data['action'] === 'send') {
+    // プッシュ通知送信の処理
+    $subscriptions = file_exists($subscriptionFile) ? json_decode(file_get_contents($subscriptionFile), true) : [];
 
-// Subscriptionオブジェクトを作成
-$subscription = Subscription::create([
-    'endpoint' => $data['endpoint'],
-    'keys' => $data['keys'],
-]);
+    if (empty($subscriptions)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'No subscriptions found.']);
+        exit();
+    }
 
-// プッシュ通知を送信
-$report = $webPush->sendOneNotification(
-    $subscription,
-    "Hello from the server!"
-);
+    $auth = [
+        'VAPID' => [
+            'subject' => 'mailto:me@example.com',
+            'publicKey' => $_ENV['PUBLIC_KEY'],
+            'privateKey' => $_ENV['PRIVATE_KEY'],
+        ],
+    ];
 
-$webPush->flush();
+    $webPush = new WebPush($auth);
+    $payload = $data['message'] ?? 'Default message from server!';
 
-if ($report->isSuccess()) {
-    echo "Notification sent successfully!";
+    $successful = 0;
+    foreach ($subscriptions as $subscriptionData) {
+        $subscription = Subscription::create([
+            'endpoint' => $subscriptionData['endpoint'],
+            'keys' => $subscriptionData['keys'],
+        ]);
+        $report = $webPush->sendOneNotification($subscription, $payload);
+        if ($report->isSuccess()) {
+            $successful++;
+        }
+    }
+
+    $webPush->flush();
+    echo json_encode(['success' => true, 'message' => $successful . ' notifications sent successfully.']);
 } else {
-    echo "Notification failed to send.";
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid action parameter.']);
 }

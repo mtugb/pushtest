@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Push Notification</title>
+</head>
+<body>
+    <h1>Push Notification Sender</h1>
+    <button id="send-button">Send Notification</button>
+
+    <script>
+        document.getElementById('send-button').addEventListener('click', async () => {
+            // ここで、プッシュ通知のペイロード（内容）を設定
+            const payload = "サーバーからこんにちは！";
+
+            const response = await fetch('api/push.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'send',
+                    message: payload
+                    // ここで、特定のユーザーを識別するための情報を送ることも可能
+                })
+            });
+
+            const result = await response.text();
+            console.log(result);
+            alert(result);
+        });
+    </script>
+</body>
+</html>
