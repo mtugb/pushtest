@@ -24,7 +24,6 @@ if ($data['action'] === 'register') {
     file_put_contents($subscriptionFile, json_encode($subscriptions));
     echo json_encode(['success' => true, 'message' => 'Subscription registered successfully.']);
 } elseif ($data['action'] === 'send') {
-    // プッシュ通知送信の処理
     $subscriptions = file_exists($subscriptionFile) ? json_decode(file_get_contents($subscriptionFile), true) : [];
 
     if (empty($subscriptions)) {
@@ -36,8 +35,8 @@ if ($data['action'] === 'register') {
     $auth = [
         'VAPID' => [
             'subject' => 'mailto:me@example.com',
-            'publicKey' => 'BBCwjVU78n7y1VAvWukBSxYey95PeNIPVRNfc5PoWlYwWbBaZyH09iXwLlCGKzvTq1isJHJg0-lwm1XKspA_tQ0', // app.htmlと同じ公開鍵
-            'privateKey' => 'DFP11uaxtObFO9BMNuVsMs4EYKYUVqBbes6LZ70xk_I', // オンラインツールで生成した秘密鍵をここに貼り付け
+            'publicKey' => 'YOUR_VAPID_PUBLIC_KEY',
+            'privateKey' => 'YOUR_VAPID_PRIVATE_KEY',
         ],
     ];
 
@@ -45,16 +44,29 @@ if ($data['action'] === 'register') {
     $payload = $data['message'] ?? 'Default message from server!';
 
     $successful = 0;
+    $validSubscriptions = [];
+
     foreach ($subscriptions as $subscriptionData) {
         $subscription = Subscription::create([
             'endpoint' => $subscriptionData['endpoint'],
             'keys' => $subscriptionData['keys'],
         ]);
+
         $report = $webPush->sendOneNotification($subscription, $payload);
+
         if ($report->isSuccess()) {
             $successful++;
+            // 成功した購読情報のみを保持
+            $validSubscriptions[] = $subscriptionData;
+        } else {
+            // 失敗した場合はログを出力（デバッグ用）
+            error_log("Failed to send notification: " . $report->getReason() . " to endpoint: " . $subscription->getEndpoint());
+            // 無効な購読情報は新しい配列に追加しない
         }
     }
+
+    // 成功した購読情報のみでファイルを上書き
+    file_put_contents($subscriptionFile, json_encode($validSubscriptions));
 
     $webPush->flush();
     echo json_encode(['success' => true, 'message' => $successful . ' notifications sent successfully.']);
