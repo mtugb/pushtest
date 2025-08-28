@@ -6,6 +6,10 @@ use Minishlink\WebPush\Subscription;
 
 header('Content-Type: application/json');
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
@@ -35,8 +39,8 @@ if ($data['action'] === 'register') {
     $auth = [
         'VAPID' => [
             'subject' => 'mailto:me@example.com',
-            'publicKey' => 'YOUR_VAPID_PUBLIC_KEY',
-            'privateKey' => 'YOUR_VAPID_PRIVATE_KEY',
+            'publicKey' => $_ENV['PUBLIC_KEY'],
+            'privateKey' => $_ENV['PRIVATE_KEY'],
         ],
     ];
 
