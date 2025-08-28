@@ -26,6 +26,7 @@
                     alert('New subscription created:');
                 } else {
                     alert('Existing subscription found:');
+                    //ここでreturnすると、多分サーバーで一方的にデータが欠損しているときに再登録できなくなってしまう
                 }
 
                 // Subscriptionオブジェクトとactionを一緒に送信
